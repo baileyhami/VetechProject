@@ -1,0 +1,13 @@
+# 服务器配置
+server:
+  port: 8080  # 项目启动端口
+# 数据库配置（适配Spring Boot3.x + MySQL8.0）
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver  # 驱动类名不变，但依赖坐标已改
+    url: jdbc:mysql://localhost:3306/vetech_project?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true
+    username: root  # 你的MySQL用户名
+    password: Lhg20050831!  # 你的MySQL密码
+
+
+ 
