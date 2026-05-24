@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.vetechspringboot.mapper.ReimMainMapper">
+
+    <select id="selectReimMainList" resultType="com.example.vetechspringboot.vo.ReimMainListVO">
+        SELECT
+            m.id,
+            m.status,
+            m.reimbursement_title AS reimbursementTitle,
+            m.business_trip_reason AS businessTripReason,
+            m.subsidy_total AS subsidyTotal,
+            m.creation_time AS creationTime,
+            e.reimburser_id AS reimburserId,
+            e.reimburser_name AS reimburserName,
+            e.reimburser_no AS reimburserNo,
+            d.reim_department_id AS reimDepartmentId,
+            d.reim_department_name AS reimDepartmentName,
+            d.reim_department_no AS reimDepartmentNo,
+            c.reim_company_id AS reimCompanyId,
+            c.reim_company_name AS reimCompanyName,
+            b.business_type_id AS businessTypeId,
+            b.business_type_name AS businessTypeName
+        FROM fk_reim_main m
+        LEFT JOIN fk_reim_employee e ON m.reimburser_id = e.reimburser_id
+        LEFT JOIN fk_reim_department d ON m.reim_department_id = d.reim_department_id
+        LEFT JOIN fk_reim_company c ON m.reim_company_id = c.reim_company_id
+        LEFT JOIN fk_business_type b ON m.business_type_id = b.business_type_id
+        <where>
+            <if test="query != null and query.reimbursementNo != null and query.reimbursementNo != ''">
+                AND m.id LIKE CONCAT('%', #{query.reimbursementNo}, '%')
+            </if>
+            <if test="query != null and query.reimbursementTitle != null and query.reimbursementTitle != ''">
+                AND m.reimbursement_title LIKE CONCAT('%', #{query.reimbursementTitle}, '%')
+            </if>
+            <if test="query != null and query.businessTripReason != null and query.businessTripReason != ''">
+                AND m.business_trip_reason LIKE CONCAT('%', #{query.businessTripReason}, '%')
+            </if>
+            <if test="query != null and query.reimCompanyId != null and query.reimCompanyId != ''">
+                AND m.reim_company_id = #{query.reimCompanyId}
+            </if>
+            <if test="query != null and query.reimDepartmentId != null and query.reimDepartmentId != ''">
+                AND m.reim_department_id = #{query.reimDepartmentId}
+            </if>
+            <if test="query != null and query.reimburserId != null and query.reimburserId != ''">
+                AND m.reimburser_id = #{query.reimburserId}
+            </if>
+            <if test="query != null and query.businessTypeId != null and query.businessTypeId != ''">
+                AND m.business_type_id = #{query.businessTypeId}
+            </if>
+            <if test="query != null and query.status != null">
+                AND m.status = #{query.status}
+            </if>
+        </where>
+        ORDER BY m.creation_time DESC
+    </select>
+
+</mapper>
+

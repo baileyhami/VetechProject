@@ -2,6 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/vetech-frontend/vetech-frontend.iml" filepath="$PROJECT_DIR$/vetech-frontend/vetech-frontend.iml" />
       <module fileurl="file://$PROJECT_DIR$/vetech-project.iml" filepath="$PROJECT_DIR$/vetech-project.iml" />
     </modules>
   </component>
