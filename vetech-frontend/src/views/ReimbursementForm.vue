@@ -22,21 +22,10 @@
             </el-icon>
           </div>
           <div class="section-content" v-show="sections.basicInfo">
-            <el-form :model="form" label-width="120px" class="form-grid">
-              <el-form-item label="报销标题">
+            <el-form :model="form" label-width="96px" class="form-grid">
+              <el-form-item label="报销标题" class="form-item-full">
                 <el-input
                     v-model="form.title"
-                    placeholder="请输入"
-                    maxlength="500"
-                    show-word-limit
-                    :disabled="isReadonly"
-                />
-              </el-form-item>
-              <el-form-item label="出差事由">
-                <el-input
-                    v-model="form.reason"
-                    type="textarea"
-                    :rows="3"
                     placeholder="请输入"
                     maxlength="500"
                     show-word-limit
@@ -88,6 +77,17 @@
                     :disabled="isReadonly"
                 />
               </el-form-item>
+              <el-form-item label="出差事由" class="form-item-full">
+                <el-input
+                    v-model="form.reason"
+                    type="textarea"
+                    :rows="3"
+                    placeholder="请输入"
+                    maxlength="500"
+                    show-word-limit
+                    :disabled="isReadonly"
+                />
+              </el-form-item>
             </el-form>
           </div>
         </div>
@@ -99,7 +99,14 @@
               补录行程
             </span>
             <div class="section-header-actions">
-              <el-button v-if="!isReadonly" type="primary" size="small" @click="openTravelDialog()">
+              <el-button
+                  v-if="!isReadonly"
+                  class="section-action-button"
+                  type="primary"
+                  link
+                  :icon="CirclePlus"
+                  @click="openTravelDialog()"
+              >
                 补录行程
               </el-button>
               <el-icon
@@ -120,9 +127,11 @@
               <el-table-column label="行程说明" prop="description" min-width="200" show-overflow-tooltip />
               <el-table-column v-if="!isReadonly" label="操作" width="150" align="center">
                 <template #default="{ row, $index }">
-                  <el-button type="primary" link size="small" @click="editTravel(row)">编辑</el-button>
-                  <el-button type="primary" link size="small" @click="copyTravel(row)">复制</el-button>
-                  <el-button type="danger" link size="small" @click="deleteTravel($index)">删除</el-button>
+                  <div class="table-action-icons">
+                    <el-button class="icon-button" type="primary" link :icon="Edit" title="编辑" @click="editTravel(row)" />
+                    <el-button class="icon-button" type="primary" link :icon="CopyDocument" title="复制" @click="copyTravel(row)" />
+                    <el-button class="icon-button" type="primary" link :icon="Delete" title="删除" @click="deleteTravel($index)" />
+                  </div>
                 </template>
               </el-table-column>
             </el-table>
@@ -163,9 +172,7 @@
               </el-table-column>
               <el-table-column v-if="!isReadonly" label="操作" width="80" align="center">
                 <template #default="{ row }">
-                  <el-button type="primary" link size="small" @click="openSubsidyDialog(row)">
-                    编辑
-                  </el-button>
+                  <el-button class="icon-button" type="primary" link :icon="Edit" title="编辑" @click="openSubsidyDialog(row)" />
                 </template>
               </el-table-column>
             </el-table>
@@ -279,18 +286,25 @@
               <el-table-column v-if="!isReadonly" label="操作" width="80" align="center">
                 <template #default="{ $index }">
                   <el-button
-                      type="danger"
+                      class="icon-button"
+                      type="primary"
                       link
-                      size="small"
+                      :icon="Delete"
+                      title="删除"
                       @click="deleteAllocation($index)"
-                  >
-                    删除
-                  </el-button>
+                  />
                 </template>
               </el-table-column>
             </el-table>
             <div class="allocation-add">
-              <el-button v-if="!isReadonly" type="primary" link size="small" @click="addAllocation">
+              <el-button
+                  v-if="!isReadonly"
+                  class="add-line-button"
+                  type="primary"
+                  link
+                  :icon="CirclePlus"
+                  @click="addAllocation"
+              >
                 添加一行
               </el-button>
             </div>
@@ -311,7 +325,16 @@
               备注信息
             </span>
             <div class="section-header-actions">
-              <el-button v-if="!isReadonly" type="danger" link size="small" @click="deleteRemark">删除备注</el-button>
+              <el-button
+                  v-if="!isReadonly"
+                  class="section-action-button"
+                  type="primary"
+                  link
+                  :icon="Delete"
+                  @click="deleteRemark"
+              >
+                删除备注
+              </el-button>
               <el-icon
                   class="section-icon"
                   :class="{ 'is-expanded': sections.remark }"
@@ -366,7 +389,7 @@
 import { ref, reactive, computed, onMounted, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { ArrowRight, InfoFilled, Refresh } from '@element-plus/icons-vue'
+import { ArrowRight, CirclePlus, CopyDocument, Delete, Edit, InfoFilled, Refresh } from '@element-plus/icons-vue'
 import TravelItineraryDialog from '../components/TravelItineraryDialog.vue'
 import SubsidyCalendarDialog from '../components/SubsidyCalendarDialog.vue'
 import { fetchLookups } from '../api/lookups'
@@ -950,7 +973,7 @@ onMounted(async () => {
 
 <style scoped>
 .reimbursement-form-wrapper {
-  width: 100vw;
+  width: 100%;
   height: 100vh;
   background-color: #f0f2f5;
   display: flex;
@@ -996,30 +1019,38 @@ onMounted(async () => {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 16px 0;
+  padding: 18px 0 24px;
 }
 
 .form-content {
   width: 1200px;
   margin: 0 auto;
+  background: #fff;
+  padding: 16px;
+  box-sizing: border-box;
 }
 
 /* 分区样式 */
 .section {
-  background-color: #fff;
-  margin-bottom: 12px;
-  border-radius: 4px;
+  background-color: transparent;
+  margin-bottom: 14px;
+  border-radius: 0;
+}
+
+.section:last-child {
+  margin-bottom: 0;
 }
 
 .section-header {
   height: 36px;
-  background-color: #f5f7fa;
-  padding: 0 16px;
+  background-color: #f3f5f8;
+  padding: 0 12px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   cursor: pointer;
-  border-radius: 4px 4px 0 0;
+  border-radius: 0;
+  border-left: 3px solid #4aa3ff;
 }
 
 .section-title {
@@ -1036,7 +1067,7 @@ onMounted(async () => {
 
 .section-icon {
   font-size: 16px;
-  color: #999;
+  color: #7f8a99;
   transition: transform 0.3s;
 }
 
@@ -1045,18 +1076,31 @@ onMounted(async () => {
 }
 
 .section-content {
-  padding: 16px;
+  padding: 14px 0 0;
 }
-
 
 .form-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px 18px;
+  padding: 0 14px;
+}
+
+.form-item-full {
+  grid-column: 1 / -1;
 }
 
 .form-grid :deep(.el-form-item) {
   margin-bottom: 0;
+}
+
+.form-grid :deep(.el-form-item__label),
+.form-grid :deep(.el-form-item__content),
+:deep(.el-input__inner),
+:deep(.el-textarea__inner),
+:deep(.el-select__placeholder),
+:deep(.el-cascader__placeholder) {
+  font-size: 14px;
 }
 
 .form-grid :deep(.el-input),
@@ -1068,10 +1112,10 @@ onMounted(async () => {
 
 .subsidy-tip {
   background-color: #fff7e6;
-  border: 1px solid #ffe58f;
+  border: none;
   padding: 8px 12px;
   margin-bottom: 12px;
-  border-radius: 4px;
+  border-radius: 3px;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1087,16 +1131,18 @@ onMounted(async () => {
 .fee-summary {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
+  gap: 0;
+  padding: 10px 16px 14px;
 }
 
 .fee-item {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 12px;
-  background-color: #f9f9f9;
-  border-radius: 4px;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background-color: transparent;
+  border-radius: 0;
 }
 
 .fee-label {
@@ -1105,7 +1151,7 @@ onMounted(async () => {
 }
 
 .fee-value {
-  font-size: 16px;
+  font-size: 14px;
   color: #333;
   font-weight: 500;
 }
@@ -1126,12 +1172,13 @@ onMounted(async () => {
 }
 
 .average-button {
-  width: 20px;
-  height: 20px;
-  min-height: 20px;
+  width: 22px;
+  height: 22px;
+  min-height: 22px;
   padding: 0;
-  border-radius: 50%;
+  border-radius: 3px;
   background-color: #ecf5ff;
+  border: 1px solid #b6dcff;
 }
 
 .average-button :deep(.el-icon) {
@@ -1150,21 +1197,24 @@ onMounted(async () => {
 
 .first-row-readonly {
   color: #999;
-  background-color: #f5f5f5;
+  background-color: #f5f7fa;
   padding: 4px 8px;
   display: inline-block;
   border-radius: 4px;
+  min-width: 80px;
 }
 
 .allocation-add {
-  margin-top: 12px;
+  display: flex;
+  justify-content: center;
+  margin: 8px 0 0;
 }
 
 .allocation-footer {
-  margin-top: 12px;
+  margin-top: 8px;
   padding: 12px;
   background-color: #fff7e6;
-  border-radius: 4px;
+  border-radius: 0;
 }
 
 .allocation-summary {
@@ -1180,7 +1230,7 @@ onMounted(async () => {
 }
 
 .summary-ratio {
-  color: #333;
+  color: #fa8c16;
   font-weight: 500;
 }
 
@@ -1203,15 +1253,63 @@ onMounted(async () => {
 
 :deep(.el-table) {
   font-size: 14px;
+  border-color: #edf0f4;
 }
 
 :deep(.el-table th) {
-  background-color: #fafafa !important;
+  background-color: #f6f8fb !important;
   color: #606266;
   font-weight: normal;
+  height: 38px;
 }
 
 :deep(.el-table td) {
   font-size: 14px;
+  height: 42px;
+}
+
+:deep(.el-table .el-table__cell) {
+  padding: 6px 0;
+}
+
+.section-action-button {
+  height: 24px;
+  padding: 0;
+  font-size: 14px;
+  color: #409eff;
+}
+
+.table-action-icons {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.icon-button {
+  width: 20px;
+  height: 20px;
+  min-height: 20px;
+  padding: 0;
+  color: #409eff;
+}
+
+.icon-button + .icon-button {
+  margin-left: 0;
+}
+
+.add-line-button {
+  height: 26px;
+  padding: 0;
+  font-size: 14px;
+  color: #409eff;
+}
+
+@media (max-width: 1240px) {
+  .header-content,
+  .form-content {
+    width: calc(100% - 32px);
+  }
 }
 </style>

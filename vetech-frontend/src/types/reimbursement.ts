@@ -67,6 +67,9 @@ export interface BackendReimMain {
   reimDepartmentId?: string
   reimCompanyId?: string
   businessTypeId?: string
+  reimBusinessTypeId?: string
+  businessTypeName?: string
+  reimBusinessTypeName?: string
   businessTripReason?: string
   subsidyTotal?: number
   totalAmount?: number

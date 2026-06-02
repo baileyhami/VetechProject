@@ -304,14 +304,17 @@ onMounted(async () => {
 
 <style scoped>
 .reimbursement-wrapper {
-  width: 100vw;
+  width: 100%;
   height: 100vh;
   background: #f3f5f8;
   padding: 24px;
   box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 .reimbursement-container {
+  width: 100%;
+  min-width: 0;
   height: 100%;
   background: #fff;
   border: 1px solid #e5e7eb;
@@ -324,6 +327,7 @@ onMounted(async () => {
 }
 
 .toolbar {
+  min-width: 0;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -366,6 +370,7 @@ onMounted(async () => {
 
 .reimbursement-table {
   flex: 1;
+  width: 100%;
   min-height: 0;
 }
 

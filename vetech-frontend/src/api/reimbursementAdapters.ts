@@ -205,6 +205,8 @@ export function mapDetailToFormState(
     }
   })
 
+  const businessTypePath = resolveBusinessTypePath(main, lookups.businessTypes)
+
   return {
     form: {
       id: main.id ?? '',
@@ -213,7 +215,7 @@ export function mapDetailToFormState(
       employeeId: main.reimburserId ?? '',
       deptId: main.reimDepartmentId ?? '',
       companyId: main.reimCompanyId ?? '',
-      businessTypeId: main.businessTypeId ? [main.businessTypeId] : [],
+      businessTypeId: businessTypePath,
       remark: main.remark ?? main.remarks ?? '',
       createTime: toDate(main.creationTime)
     },
@@ -266,6 +268,62 @@ function buildBusinessTypeTree(
   })
 
   return roots
+}
+
+function findBusinessTypePath(items: BusinessTypeTreeItem[], targetId: string): string[] {
+  for (const item of items) {
+    if (item.id === targetId) {
+      return [item.id]
+    }
+    const childPath = findBusinessTypePath(item.children ?? [], targetId)
+    if (childPath.length > 0) {
+      return [item.id, ...childPath]
+    }
+  }
+  return targetId ? [targetId] : []
+}
+
+function resolveBusinessTypePath(
+  main: ReimbursementDetailResponse['main'],
+  businessTypes: BusinessTypeTreeItem[]
+): string[] {
+  const businessTypeId = pickDetailValue(main, 'businessTypeId', 'reimBusinessTypeId')
+  if (businessTypeId) {
+    return findBusinessTypePath(businessTypes, businessTypeId)
+  }
+
+  const businessTypeName = pickDetailValue(main, 'businessTypeName', 'reimBusinessTypeName', 'name')
+  if (!businessTypeName) {
+    return []
+  }
+
+  const matchedId = findBusinessTypeIdByName(businessTypes, businessTypeName)
+  return matchedId ? findBusinessTypePath(businessTypes, matchedId) : []
+}
+
+function findBusinessTypeIdByName(items: BusinessTypeTreeItem[], targetName: string): string {
+  for (const item of items) {
+    if (item.name === targetName) {
+      return item.id
+    }
+    const childId = findBusinessTypeIdByName(item.children ?? [], targetName)
+    if (childId) {
+      return childId
+    }
+  }
+  return ''
+}
+
+function pickDetailValue(item: object | undefined, ...keys: string[]): string {
+  if (!item) return ''
+  const values = item as Record<string, unknown>
+  for (const key of keys) {
+    const value = values[key]
+    if (value !== undefined && value !== null && String(value).trim() !== '') {
+      return String(value)
+    }
+  }
+  return ''
 }
 
 function toNumber(value: unknown): number {

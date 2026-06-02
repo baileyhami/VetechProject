@@ -146,7 +146,10 @@ const detailState = mapDetailToFormState({
   companies: [{ reimCompanyId: 'company-1', reimCompanyName: '北京分公司' }],
   departments: [{ reimDepartmentId: 'dept-1', reimDepartmentName: '销售部' }],
   employees: [{ reimburserId: 'emp-1', reimburserName: '张三' }],
-  businessTypes: [{ businessTypeId: 'child', businessTypeName: '项目出差', superiorId: 'none' }],
+  businessTypes: [
+    { businessTypeId: 'root', businessTypeName: '差旅', superiorId: 'none' },
+    { businessTypeId: 'child', businessTypeName: '项目出差', superiorId: 'root' }
+  ],
   projects: [{ projectId: 'project-1', projectName: '研发项目' }],
   cities: [
     { cityNo: '10119', cityName: '北京', cityType: '1' },
@@ -155,7 +158,31 @@ const detailState = mapDetailToFormState({
 }))
 
 assert.equal(detailState.form.title, '差旅报销')
+assert.deepEqual(detailState.form.businessTypeId, ['root', 'child'])
 assert.equal(detailState.travelList[0].employeeName, '张三')
 assert.equal(detailState.travelList[0].route, '北京 - 上海')
 assert.equal(detailState.allocationList[0].ratio, 100)
 assert.equal(detailState.subsidyList[0].mealAmount, 50)
+
+const detailStateWithBusinessTypeName = mapDetailToFormState({
+  main: {
+    ...payload.main,
+    businessTypeId: '',
+    businessTypeName: '项目出差'
+  },
+  trips: [],
+  apportion: [],
+  subsidies: []
+}, mapLookups({
+  companies: [],
+  departments: [],
+  employees: [],
+  businessTypes: [
+    { businessTypeId: 'root', businessTypeName: '差旅', superiorId: 'none' },
+    { businessTypeId: 'child', businessTypeName: '项目出差', superiorId: 'root' }
+  ],
+  projects: [],
+  cities: []
+}))
+
+assert.deepEqual(detailStateWithBusinessTypeName.form.businessTypeId, ['root', 'child'])
