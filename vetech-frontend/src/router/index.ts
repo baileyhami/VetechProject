@@ -1,28 +1,29 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import ReimbursementListView from '../views/ReimbursementListView.vue'
-import ReimbursementFormView from '../views/ReimbursementFormView.vue'
+import ReimbursementView from '../views/ReimbursementView.vue'
+import ReimbursementForm from '../views/ReimbursementForm.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
       path: '/',
-      name: 'reimbursements',
-      component: ReimbursementListView
+      name: 'home',
+      component: ReimbursementView
     },
     {
-      path: '/reimbursements',
-      redirect: '/'
+      path: '/reimbursement/add',
+      name: 'reimbursementAdd',
+      component: ReimbursementForm
     },
     {
-      path: '/reimbursements/new',
-      name: 'reimbursement-create',
-      component: ReimbursementFormView
+      path: '/reimbursement/edit/:id',
+      name: 'reimbursementEdit',
+      component: ReimbursementForm
     },
     {
-      path: '/reimbursements/:id',
-      name: 'reimbursement-detail',
-      component: ReimbursementFormView
+      path: '/reimbursement/detail/:id',
+      name: 'reimbursementDetail',
+      component: ReimbursementForm
     }
   ]
 })

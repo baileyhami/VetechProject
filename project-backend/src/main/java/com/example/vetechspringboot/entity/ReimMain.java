@@ -1,7 +1,9 @@
 package com.example.vetechspringboot.entity;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -19,11 +21,15 @@ public class ReimMain {
     private String reimCompanyId;
     private String businessTypeId;
     private String businessTripReason;
-    private BigDecimal subsidyTotal;
+    @TableField("subsidy_total")
+    @JsonProperty("subsidyTotal")
+    private BigDecimal totalAmount;
     private BigDecimal mealAllowance;
     private BigDecimal transportationAllowance;
     private BigDecimal phoneAllowance;
-    private String remarks;
+    @TableField("remarks")
+    @JsonProperty("remarks")
+    private String remark;
     private Integer status;
 }
 

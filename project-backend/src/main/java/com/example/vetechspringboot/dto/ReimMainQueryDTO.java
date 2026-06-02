@@ -4,6 +4,8 @@ import lombok.Data;
 
 @Data
 public class ReimMainQueryDTO {
+    private Integer current;
+    private Integer size;
     private String reimbursementNo;
     private String reimbursementTitle;
     private String businessTripReason;

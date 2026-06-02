@@ -1,42 +1,68 @@
-import http from './http'
-import type { ReimbursementDetail, ReimbursementListItem } from '@/types/reimbursement'
+import { http, requestData } from './http'
+import {
+  mapDetailToFormState,
+  mapFormStateToDetailPayload,
+  mapListItem,
+  mapListQuery
+} from './reimbursementAdapters'
+import type {
+  BackendPage,
+  BackendReimbursementListItem,
+  DetailFormState,
+  FormStateForPayload,
+  NormalizedLookups,
+  ReimbursementDetailResponse,
+  ReimbursementFilters,
+  ReimbursementItem
+} from '../types/reimbursement'
 
-export interface ReimbursementQuery {
-  id?: string
-  title?: string
-  reason?: string
-  companyId?: string
-  departmentId?: string
-  reimburserId?: string
-  businessTypeId?: string
+export interface ReimbursementPage {
+  records: ReimbursementItem[]
+  total: number
 }
 
-export const fetchReimbursements = async (query: ReimbursementQuery) => {
-  const { data } = await http.get<ReimbursementListItem[]>('/reimbursements', { params: query })
-  return data
+export async function fetchReimbursements(
+  filters: ReimbursementFilters,
+  current: number,
+  size: number
+): Promise<ReimbursementPage> {
+  const data = await requestData<BackendPage<BackendReimbursementListItem>>(
+    http.get('/reimbursements', {
+      params: mapListQuery(filters, current, size)
+    })
+  )
+
+  return {
+    records: (data.records ?? []).map(mapListItem),
+    total: data.total ?? 0
+  }
 }
 
-export const fetchReimbursementDetail = async (id: string) => {
-  const { data } = await http.get<ReimbursementDetail>(`/reimbursements/${id}`)
-  return data
+export async function fetchReimbursementDetail(
+  id: string,
+  lookups: NormalizedLookups
+): Promise<DetailFormState> {
+  const data = await requestData<ReimbursementDetailResponse>(http.get(`/reimbursements/${id}`))
+  return mapDetailToFormState(data, lookups)
 }
 
-export const createReimbursement = async (payload: ReimbursementDetail) => {
-  const { data } = await http.post<{ id: string }>('/reimbursements', payload)
-  return data
+export async function saveReimbursement(state: FormStateForPayload): Promise<string> {
+  const payload = mapFormStateToDetailPayload(state)
+  const id = state.form.id
+  if (id) {
+    return requestData<string>(http.put(`/reimbursements/${id}`, payload))
+  }
+  return requestData<string>(http.post('/reimbursements', payload))
 }
 
-export const updateReimbursement = async (id: string, payload: ReimbursementDetail) => {
-  const { data } = await http.put<{ id: string }>(`/reimbursements/${id}`, payload)
-  return data
+export async function submitReimbursement(id: string): Promise<boolean> {
+  return requestData<boolean>(http.post(`/reimbursements/${id}/submit`))
 }
 
-export const submitReimbursement = async (id: string) => {
-  const { data } = await http.post<{ id: string; status: number }>(`/reimbursements/${id}/submit`)
-  return data
+export async function voidReimbursement(id: string): Promise<boolean> {
+  return requestData<boolean>(http.post(`/reimbursements/${id}/void`))
 }
 
-export const voidReimbursement = async (id: string) => {
-  const { data } = await http.post<{ id: string; status: number }>(`/reimbursements/${id}/void`)
-  return data
+export async function deleteReimbursement(id: string): Promise<boolean> {
+  return requestData<boolean>(http.delete(`/reimbursements/${id}`))
 }

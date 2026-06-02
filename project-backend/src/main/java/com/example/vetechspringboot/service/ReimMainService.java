@@ -1,14 +1,18 @@
 package com.example.vetechspringboot.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.example.vetechspringboot.dto.ReimMainQueryDTO;
+import com.example.vetechspringboot.dto.ReimbursementDetailDTO;
 import com.example.vetechspringboot.entity.ReimMain;
+import com.example.vetechspringboot.vo.ReimbursementDetailVO;
 import com.example.vetechspringboot.vo.BusinessTypeOptionVO;
 import com.example.vetechspringboot.vo.ReimCompanyOptionVO;
 import com.example.vetechspringboot.vo.ReimDepartmentOptionVO;
 import com.example.vetechspringboot.vo.ReimEmployeeOptionVO;
 import com.example.vetechspringboot.vo.ReimMainListVO;
+import com.example.vetechspringboot.vo.Result;
 
 import java.util.List;
 
@@ -22,5 +26,15 @@ public interface ReimMainService extends IService<ReimMain> {
     List<ReimEmployeeOptionVO> listEmployeeOptions();
 
     List<BusinessTypeOptionVO> listBusinessTypeOptions();
+
+    Result<String> saveOrUpdateMain(ReimMain reimMain);
+
+    Result<Page<ReimMain>> pageMain(ReimMainQueryDTO queryDTO);
+
+    Result<Boolean> submitReimbursement(String mainId);
+
+    Result<String> saveOrUpdateDetail(ReimbursementDetailDTO dto);
+
+    Result<ReimbursementDetailVO> getReimbursementDetail(String id);
 }
 

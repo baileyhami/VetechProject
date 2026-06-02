@@ -1,9 +1,21 @@
 import axios from 'axios'
+import { ElMessage } from 'element-plus'
+import type { Result } from '../types/reimbursement'
 
-const http = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
-  timeout: 15000
+export const http = axios.create({
+  baseURL: '/api',
+  timeout: 10000
 })
 
-export default http
+export async function requestData<T>(promise: Promise<{ data: Result<T> }>): Promise<T> {
+  const response = await promise
+  const result = response.data
 
+  if (result.code !== '200') {
+    const message = result.message || '请求失败'
+    ElMessage.error(message)
+    throw new Error(message)
+  }
+
+  return result.data
+}

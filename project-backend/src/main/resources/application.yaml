@@ -4,8 +4,9 @@ server:
 # 数据库配置（适配Spring Boot3.x + MySQL8.0）
 spring:
   datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver  # 驱动类名不变，但依赖坐标已改
-    url: jdbc:mysql://localhost:3306/vetech_project?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true
+    driver-class-name: com.mysql.cj.jdbc.Driver
+      # 注意：这里将原先的数据库名改成了 vetech_project
+    url: jdbc:mysql://localhost:3306/vetech_project?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
     username: root  # 你的MySQL用户名
     password: Lhg20050831! # 你的MySQL密码
 
@@ -15,9 +16,6 @@ mybatis-plus:
   global-config:
     db-config:
       id-type: auto
-      logic-delete-field: deleted
-      logic-delete-value: 1
-      logic-not-delete-value: 0
   configuration:
     map-underscore-to-camel-case: true
     cache-enabled: false
