@@ -12,7 +12,8 @@ export async function requestData<T>(promise: Promise<{ data: Result<T> }>): Pro
   const result = response.data
 
   if (result.code !== '200') {
-    const message = result.message || '请求失败'
+    const dataMessage = typeof result.data === 'string' ? result.data : ''
+    const message = dataMessage || result.message || '请求失败'
     ElMessage.error(message)
     throw new Error(message)
   }

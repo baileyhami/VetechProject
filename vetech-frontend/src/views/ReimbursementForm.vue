@@ -29,6 +29,7 @@
                     placeholder="请输入"
                     maxlength="500"
                     show-word-limit
+                    :disabled="isReadonly"
                 />
               </el-form-item>
               <el-form-item label="出差事由">
@@ -39,10 +40,11 @@
                     placeholder="请输入"
                     maxlength="500"
                     show-word-limit
+                    :disabled="isReadonly"
                 />
               </el-form-item>
               <el-form-item label="报销人">
-                <el-select v-model="form.employeeId" placeholder="请选择">
+                <el-select v-model="form.employeeId" placeholder="请选择" :disabled="isReadonly">
                   <el-option
                       v-for="emp in employees"
                       :key="emp.id"
@@ -52,7 +54,7 @@
                 </el-select>
               </el-form-item>
               <el-form-item label="报销部门">
-                <el-select v-model="form.deptId" placeholder="请选择">
+                <el-select v-model="form.deptId" placeholder="请选择" :disabled="isReadonly">
                   <el-option
                       v-for="dept in departments"
                       :key="dept.id"
@@ -62,7 +64,12 @@
                 </el-select>
               </el-form-item>
               <el-form-item label="费用归属公司">
-                <el-select v-model="form.companyId" placeholder="请选择">
+                <el-select
+                    v-model="form.companyId"
+                    placeholder="请选择"
+                    :disabled="isReadonly"
+                    @change="handleMainCompanyChange"
+                >
                   <el-option
                       v-for="company in companies"
                       :key="company.id"
@@ -78,6 +85,7 @@
                     placeholder="请选择"
                     :props="{ label: 'name', value: 'id', children: 'children' }"
                     clearable
+                    :disabled="isReadonly"
                 />
               </el-form-item>
             </el-form>
@@ -91,7 +99,7 @@
               补录行程
             </span>
             <div class="section-header-actions">
-              <el-button type="primary" size="small" @click="openTravelDialog()">
+              <el-button v-if="!isReadonly" type="primary" size="small" @click="openTravelDialog()">
                 补录行程
               </el-button>
               <el-icon
@@ -110,7 +118,7 @@
               <el-table-column label="出差日期" prop="dateRange" min-width="180" />
               <el-table-column label="行程" prop="route" min-width="150" />
               <el-table-column label="行程说明" prop="description" min-width="200" show-overflow-tooltip />
-              <el-table-column label="操作" width="150" align="center">
+              <el-table-column v-if="!isReadonly" label="操作" width="150" align="center">
                 <template #default="{ row, $index }">
                   <el-button type="primary" link size="small" @click="editTravel(row)">编辑</el-button>
                   <el-button type="primary" link size="small" @click="copyTravel(row)">复制</el-button>
@@ -153,7 +161,7 @@
                   {{ formatMoney(row.subsidyAmount) }}
                 </template>
               </el-table-column>
-              <el-table-column label="操作" width="80" align="center">
+              <el-table-column v-if="!isReadonly" label="操作" width="80" align="center">
                 <template #default="{ row }">
                   <el-button type="primary" link size="small" @click="openSubsidyDialog(row)">
                     编辑
@@ -206,14 +214,11 @@
             </el-icon>
           </div>
           <div class="section-content" v-show="sections.allocation">
-            <div class="allocation-actions">
-              <el-button type="primary" size="small" @click="handleAverageAllocation">均摊</el-button>
-            </div>
             <el-table :data="allocationList" border stripe>
               <el-table-column label="序号" type="index" width="60" align="center" />
               <el-table-column label="费用归属公司" min-width="200">
                 <template #default="{ row, $index }">
-                  <el-select v-model="row.companyId" placeholder="请选择" :disabled="$index === 0">
+                  <el-select v-model="row.companyId" placeholder="请选择" :disabled="isReadonly">
                     <el-option
                         v-for="company in companies"
                         :key="company.id"
@@ -225,7 +230,7 @@
               </el-table-column>
               <el-table-column label="项目" min-width="200">
                 <template #default="{ row, $index }">
-                  <el-select v-model="row.projectId" placeholder="请选择" :disabled="$index === 0">
+                  <el-select v-model="row.projectId" placeholder="请选择" :disabled="isReadonly">
                     <el-option
                         v-for="project in projects"
                         :key="project.id"
@@ -235,7 +240,21 @@
                   </el-select>
                 </template>
               </el-table-column>
-              <el-table-column label="分摊比例" width="150" align="right">
+              <el-table-column width="150" align="right">
+                <template #header>
+                  <span class="ratio-header">
+                    <span>分摊比例</span>
+                    <el-button
+                        v-if="!isReadonly"
+                        class="average-button"
+                        type="primary"
+                        link
+                        :icon="Refresh"
+                        @click.stop="handleAverageAllocation"
+                    />
+                    <span class="required-mark">*</span>
+                  </span>
+                </template>
                 <template #default="{ row, $index }">
                   <el-input-number
                       v-model="row.ratio"
@@ -243,7 +262,7 @@
                       :max="100"
                       :precision="2"
                       :controls="false"
-                      :disabled="$index === 0"
+                      :disabled="isReadonly || $index === 0"
                       @change="handleRatioChange($index)"
                       style="width: 100%"
                   />
@@ -257,7 +276,7 @@
                   </span>
                 </template>
               </el-table-column>
-              <el-table-column label="操作" width="80" align="center">
+              <el-table-column v-if="!isReadonly" label="操作" width="80" align="center">
                 <template #default="{ $index }">
                   <el-button
                       type="danger"
@@ -271,7 +290,7 @@
               </el-table-column>
             </el-table>
             <div class="allocation-add">
-              <el-button type="primary" link size="small" @click="addAllocation">
+              <el-button v-if="!isReadonly" type="primary" link size="small" @click="addAllocation">
                 添加一行
               </el-button>
             </div>
@@ -292,7 +311,7 @@
               备注信息
             </span>
             <div class="section-header-actions">
-              <el-button type="danger" link size="small" @click="deleteRemark">删除备注</el-button>
+              <el-button v-if="!isReadonly" type="danger" link size="small" @click="deleteRemark">删除备注</el-button>
               <el-icon
                   class="section-icon"
                   :class="{ 'is-expanded': sections.remark }"
@@ -310,6 +329,7 @@
                 placeholder="请输入"
                 maxlength="1000"
                 show-word-limit
+                :disabled="isReadonly"
             />
           </div>
         </div>
@@ -319,7 +339,7 @@
     <!-- 固定底部按钮 -->
     <div class="form-footer">
       <el-button @click="handleClose">关闭</el-button>
-      <el-button type="primary" @click="handleSubmit">提交</el-button>
+      <el-button v-if="!isReadonly" type="primary" @click="handleSubmit">提交</el-button>
     </div>
 
     <!-- 补录行程弹窗 -->
@@ -346,7 +366,7 @@
 import { ref, reactive, computed, onMounted, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { ArrowRight, InfoFilled } from '@element-plus/icons-vue'
+import { ArrowRight, InfoFilled, Refresh } from '@element-plus/icons-vue'
 import TravelItineraryDialog from '../components/TravelItineraryDialog.vue'
 import SubsidyCalendarDialog from '../components/SubsidyCalendarDialog.vue'
 import { fetchLookups } from '../api/lookups'
@@ -360,6 +380,7 @@ import type { BusinessTypeTreeItem, CityOption, NormalizedLookups, OptionItem } 
 const router = useRouter()
 const route = useRoute()
 const lookupData = ref<NormalizedLookups | null>(null)
+const isReadonly = computed(() => route.name === 'reimbursementDetail')
 
 // 分区展开状态
 const sections = reactive({
@@ -445,7 +466,7 @@ const feeSummary = reactive({
 // 费用分摊列表
 const allocationList = ref<any[]>([
   {
-    companyId: '1',
+    companyId: '',
     projectId: '',
     ratio: 100,
     amount: 0
@@ -468,22 +489,17 @@ const applyLookups = async (): Promise<void> => {
   businessTypes.value = data.businessTypes
   projects.value = data.projects
   cities.value = data.cities
-
-  if (!form.companyId && data.companies[0]) {
-    form.companyId = data.companies[0].id
-    allocationList.value[0].companyId = data.companies[0].id
-  }
-  if (!allocationList.value[0].projectId && data.projects[0]) {
-    allocationList.value[0].projectId = data.projects[0].id
-  }
 }
 
 const applyDetailState = (state: Awaited<ReturnType<typeof fetchReimbursementDetail>>, clearId = false): void => {
   Object.assign(form, state.form)
   if (clearId) {
     form.id = ''
+    form.createTime = new Date()
   }
-  travelList.value = state.travelList
+  travelList.value = clearId
+      ? state.travelList.map(item => ({ ...item, id: undefined }))
+      : state.travelList
   subsidyList.value = state.subsidyList
   allocationList.value = state.allocationList
   Object.assign(feeSummary, state.feeSummary)
@@ -497,6 +513,40 @@ const saveCurrentForm = async (): Promise<string> => {
     travelList: travelList.value,
     allocationList: allocationList.value
   })
+}
+
+const hasDraftContent = (): boolean => {
+  return Boolean(
+      form.id ||
+      form.title.trim() ||
+      form.reason.trim() ||
+      form.employeeId ||
+      form.deptId ||
+      form.companyId ||
+      form.businessTypeId.length > 0 ||
+      form.remark.trim() ||
+      travelList.value.length > 0 ||
+      subsidyList.value.length > 0 ||
+      allocationList.value.some(item =>
+          item.companyId ||
+          item.projectId ||
+          item.ratio !== 100 ||
+          item.amount
+      )
+  )
+}
+
+const handleMainCompanyChange = (value: string): void => {
+  if (!allocationList.value[0]) {
+    allocationList.value.push({
+      companyId: value,
+      projectId: '',
+      ratio: 100,
+      amount: 0
+    })
+    return
+  }
+  allocationList.value[0].companyId = value
 }
 
 // 补录行程弹窗
@@ -793,11 +843,18 @@ const deleteRemark = async () => {
 // 关闭
 const handleClose = async () => {
   try {
-    await ElMessageBox.confirm('确认关闭当前页面？未保存的数据将丢失', '提示', {
+    const message = isReadonly.value || !hasDraftContent()
+        ? '确认关闭当前页面？'
+        : '确认关闭当前页面？当前内容将保存为草稿'
+    await ElMessageBox.confirm(message, '提示', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'warning'
     })
+    if (!isReadonly.value && hasDraftContent()) {
+      await saveCurrentForm()
+      ElMessage.success('草稿已保存')
+    }
     router.back()
   } catch {
     // 取消
@@ -1053,16 +1110,37 @@ onMounted(async () => {
   font-weight: 500;
 }
 
-/* 费用分摊 */
-.allocation-actions {
-  margin-bottom: 12px;
-}
-
 .allocation-amount {
   font-size: 14px;
   color: #999;
   font-weight: normal;
   margin-left: 8px;
+}
+
+.ratio-header {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  width: 100%;
+}
+
+.average-button {
+  width: 20px;
+  height: 20px;
+  min-height: 20px;
+  padding: 0;
+  border-radius: 50%;
+  background-color: #ecf5ff;
+}
+
+.average-button :deep(.el-icon) {
+  font-size: 16px;
+}
+
+.required-mark {
+  color: #f56c6c;
+  font-weight: 600;
 }
 
 .percent-sign {

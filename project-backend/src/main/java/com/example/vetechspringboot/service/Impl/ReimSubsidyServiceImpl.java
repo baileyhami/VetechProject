@@ -66,7 +66,10 @@ public class ReimSubsidyServiceImpl extends ServiceImpl<ReimSubsidyMapper, ReimS
 
 				String cityNo = trip.getArrivalCityNo();
 				String cityType = resolveCityType(cityNo);
-				BigDecimal dailyStd = resolveDailyStd(cityType);
+				BigDecimal mealStd = resolveMealStd(cityType);
+				BigDecimal transportStd = BigDecimal.valueOf(40);
+				BigDecimal phoneStd = BigDecimal.valueOf(40);
+				BigDecimal dailyAmount = mealStd.add(transportStd).add(phoneStd);
 
 				ReimSubsidy subsidy = new ReimSubsidy();
 				subsidy.setId(UUID.randomUUID().toString().replace("-", ""));
@@ -77,10 +80,10 @@ public class ReimSubsidyServiceImpl extends ServiceImpl<ReimSubsidyMapper, ReimS
 				subsidy.setSubsidyDays((int) (end.toEpochDay() - start.toEpochDay() + 1));
 				subsidy.setTripRoute(trip.getDepartureCityNo() + "-" + trip.getArrivalCityNo());
 				subsidy.setSubsidyCityNo(cityNo);
-				subsidy.setMealAllowance(dailyStd);
-				subsidy.setTransportationAllowance(BigDecimal.ZERO);
-				subsidy.setPhoneAllowance(BigDecimal.ZERO);
-				subsidy.setApplyAmount(dailyStd.multiply(BigDecimal.valueOf(subsidy.getSubsidyDays())));
+				subsidy.setMealAllowance(mealStd.multiply(BigDecimal.valueOf(subsidy.getSubsidyDays())));
+				subsidy.setTransportationAllowance(transportStd.multiply(BigDecimal.valueOf(subsidy.getSubsidyDays())));
+				subsidy.setPhoneAllowance(phoneStd.multiply(BigDecimal.valueOf(subsidy.getSubsidyDays())));
+				subsidy.setApplyAmount(dailyAmount.multiply(BigDecimal.valueOf(subsidy.getSubsidyDays())));
 				subsidy.setSubsidyAmount(subsidy.getApplyAmount());
 				subsidies.add(subsidy);
 
@@ -91,12 +94,12 @@ public class ReimSubsidyServiceImpl extends ServiceImpl<ReimSubsidyMapper, ReimS
 					detail.setDetailDate(date);
 					detail.setWeekDay(toWeekDay(date));
 					detail.setCityNo(cityNo);
-					detail.setMealStd(dailyStd);
-					detail.setMealAmount(dailyStd);
-					detail.setTransportStd(BigDecimal.ZERO);
-					detail.setTransportAmount(BigDecimal.ZERO);
-					detail.setPhoneStd(BigDecimal.ZERO);
-					detail.setPhoneAmount(BigDecimal.ZERO);
+					detail.setMealStd(mealStd);
+					detail.setMealAmount(mealStd);
+					detail.setTransportStd(transportStd);
+					detail.setTransportAmount(transportStd);
+					detail.setPhoneStd(phoneStd);
+					detail.setPhoneAmount(phoneStd);
 					detail.setIsSelected(1);
 					details.add(detail);
 				}
@@ -116,7 +119,13 @@ public class ReimSubsidyServiceImpl extends ServiceImpl<ReimSubsidyMapper, ReimS
 	}
 
 	private LocalDate toLocalDate(java.util.Date date) {
-		return date == null ? null : date.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate();
+		if (date == null) {
+			return null;
+		}
+		if (date instanceof java.sql.Date sqlDate) {
+			return sqlDate.toLocalDate();
+		}
+		return date.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate();
 	}
 
 	private String resolveCityType(String cityNo) {
@@ -127,7 +136,7 @@ public class ReimSubsidyServiceImpl extends ServiceImpl<ReimSubsidyMapper, ReimS
 		return city == null || city.getCityType() == null ? "2" : city.getCityType();
 	}
 
-	private BigDecimal resolveDailyStd(String cityType) {
+	private BigDecimal resolveMealStd(String cityType) {
 		if ("1".equals(cityType)) {
 			return BigDecimal.valueOf(100);
 		}

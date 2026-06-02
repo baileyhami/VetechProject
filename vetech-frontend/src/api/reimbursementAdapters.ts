@@ -17,9 +17,8 @@ import type {
 
 const statusText: Record<string, string> = {
   '0': '草稿',
-  '1': '审批中',
-  '2': '审批通过',
-  '3': '已作废'
+  '1': '已完成',
+  '2': '已作废'
 }
 
 export function mapStatus(value: number | string | undefined): string {

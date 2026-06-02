@@ -45,7 +45,7 @@ assert.deepEqual(mapListItem({
 }), {
   id: 'BX202606010001',
   reimNo: 'BX202606010001',
-  status: '审批中',
+  status: '已完成',
   reimburserName: '张三',
   reimburserNo: 'E001',
   reimburserDeptName: '销售部',

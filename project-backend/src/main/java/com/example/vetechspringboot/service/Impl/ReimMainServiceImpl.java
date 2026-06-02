@@ -43,6 +43,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
@@ -137,6 +138,7 @@ public class ReimMainServiceImpl extends ServiceImpl<ReimMainMapper, ReimMain> i
             if (reimMain == null) {
                 return Result.error("request_body_is_null");
             }
+            normalizeMain(reimMain);
             if (reimMain.getId() == null || reimMain.getId().trim().isEmpty()) {
                 String newId = generateReimbursementNo();
                 reimMain.setId(newId);
@@ -190,6 +192,21 @@ public class ReimMainServiceImpl extends ServiceImpl<ReimMainMapper, ReimMain> i
         return value != null && !value.trim().isEmpty();
     }
 
+    private void normalizeMain(ReimMain reimMain) {
+        if (reimMain.getReimburserId() != null && reimMain.getReimburserId().trim().isEmpty()) {
+            reimMain.setReimburserId(null);
+        }
+        if (reimMain.getReimDepartmentId() != null && reimMain.getReimDepartmentId().trim().isEmpty()) {
+            reimMain.setReimDepartmentId(null);
+        }
+        if (reimMain.getReimCompanyId() != null && reimMain.getReimCompanyId().trim().isEmpty()) {
+            reimMain.setReimCompanyId(null);
+        }
+        if (reimMain.getBusinessTypeId() != null && reimMain.getBusinessTypeId().trim().isEmpty()) {
+            reimMain.setBusinessTypeId(null);
+        }
+    }
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Result<String> saveOrUpdateDetail(ReimbursementDetailDTO dto) {
@@ -208,21 +225,70 @@ public class ReimMainServiceImpl extends ServiceImpl<ReimMainMapper, ReimMain> i
         if (trips.isEmpty()) {
             reimTripService.remove(new LambdaQueryWrapper<ReimTrip>().eq(ReimTrip::getMainId, mainId));
         } else {
+            Result<String> tripValidation = validateTrips(trips);
+            if (!"200".equals(tripValidation.getCode())) {
+                return tripValidation;
+            }
             trips.forEach(trip -> trip.setMainId(mainId));
             if (!reimTripService.saveOrReplaceTrips(trips)) {
                 throw new IllegalStateException("trip_save_failed");
             }
-        }
 
-        Result<List<ReimSubsidyDetail>> subsidyResult = reimSubsidyService.calculateSubsidy(mainId);
-        if (subsidyResult == null || !"200".equals(subsidyResult.getCode())) {
-            throw new IllegalStateException("subsidy_calculate_failed");
+            Result<List<ReimSubsidyDetail>> subsidyResult = reimSubsidyService.calculateSubsidy(mainId);
+            if (subsidyResult == null || !"200".equals(subsidyResult.getCode())) {
+                throw new IllegalStateException("subsidy_calculate_failed");
+            }
         }
 
         List<ReimApportion> apportions = dto.getApportion() != null ? dto.getApportion() : Collections.emptyList();
         saveOrReplaceApportions(mainId, apportions);
 
         return Result.success(mainId);
+    }
+
+    private Result<String> validateTrips(List<ReimTrip> trips) {
+        for (int i = 0; i < trips.size(); i++) {
+            ReimTrip current = trips.get(i);
+            if (!hasText(current.getTravelerId())
+                    || current.getDepartureDate() == null
+                    || current.getArrivalDate() == null
+                    || !hasText(current.getDepartureCityNo())
+                    || !hasText(current.getArrivalCityNo())
+                    || !hasText(current.getTripRemark())) {
+                return Result.error("trip_required");
+            }
+
+            LocalDate currentStart = toLocalDate(current.getDepartureDate());
+            LocalDate currentEnd = toLocalDate(current.getArrivalDate());
+            if (currentStart == null || currentEnd == null || currentEnd.isBefore(currentStart)) {
+                return Result.error("trip_date_invalid");
+            }
+
+            for (int j = i + 1; j < trips.size(); j++) {
+                ReimTrip other = trips.get(j);
+                if (!Objects.equals(current.getTravelerId(), other.getTravelerId())) {
+                    continue;
+                }
+                LocalDate otherStart = toLocalDate(other.getDepartureDate());
+                LocalDate otherEnd = toLocalDate(other.getArrivalDate());
+                if (otherStart != null && otherEnd != null
+                        && !currentEnd.isBefore(otherStart)
+                        && !otherEnd.isBefore(currentStart)) {
+                    return Result.error("trip_date_overlap");
+                }
+            }
+        }
+        return Result.success("valid");
+    }
+
+    private LocalDate toLocalDate(java.util.Date date) {
+        if (date == null) {
+            return null;
+        }
+        if (date instanceof java.sql.Date sqlDate) {
+            return sqlDate.toLocalDate();
+        }
+        return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
     }
 
     private void removeSubsidiesByMainId(String mainId) {
@@ -337,8 +403,21 @@ public class ReimMainServiceImpl extends ServiceImpl<ReimMainMapper, ReimMain> i
     private String generateReimbursementNo() {
         String datePart = LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE);
         String prefix = "BX" + datePart;
-        Long count = reimMainMapper.selectCount(new LambdaQueryWrapper<ReimMain>().likeRight(ReimMain::getId, prefix));
-        long seq = (count == null ? 0 : count) + 1;
+        ReimMain latest = reimMainMapper.selectOne(
+                new LambdaQueryWrapper<ReimMain>()
+                        .likeRight(ReimMain::getId, prefix)
+                        .orderByDesc(ReimMain::getId)
+                        .last("LIMIT 1")
+        );
+        long seq = 1;
+        if (latest != null && latest.getId() != null && latest.getId().length() > prefix.length()) {
+            String suffix = latest.getId().substring(prefix.length());
+            try {
+                seq = Long.parseLong(suffix) + 1;
+            } catch (NumberFormatException ignored) {
+                seq = 1;
+            }
+        }
         return prefix + String.format("%04d", seq);
     }
 }

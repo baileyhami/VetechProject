@@ -43,22 +43,22 @@
             </el-select>
           </el-form-item>
           <el-form-item label="业务类型">
-            <el-select v-model="filters.businessTypeId" clearable filterable placeholder="请选择">
-              <el-option
-                v-for="item in flatBusinessTypes"
-                :key="item.id"
-                :label="item.name"
-                :value="item.id"
-              />
-            </el-select>
+            <el-cascader
+              v-model="businessTypeFilter"
+              :options="businessTypes"
+              clearable
+              filterable
+              placeholder="请选择"
+              :props="{ label: 'name', value: 'id', children: 'children', checkStrictly: true }"
+              @change="handleBusinessTypeChange"
+            />
+          </el-form-item>
+          <el-form-item class="form-actions">
+            <el-button @click="handleAdd">新增</el-button>
+            <el-button @click="resetFilters">清除</el-button>
+            <el-button type="primary" @click="handleSearch">搜索</el-button>
           </el-form-item>
         </el-form>
-
-        <div class="actions">
-          <el-button @click="handleAdd">新增</el-button>
-          <el-button @click="resetFilters">清除</el-button>
-          <el-button type="primary" @click="handleSearch">搜索</el-button>
-        </div>
       </div>
 
       <el-table
@@ -68,36 +68,56 @@
         border
         class="reimbursement-table"
       >
-        <el-table-column label="序号" width="64" align="center" fixed="left">
+        <el-table-column width="64" align="center" fixed="left">
+          <template #header>
+            <el-icon class="index-header-icon"><Menu /></el-icon>
+          </template>
           <template #default="{ $index }">
             {{ (currentPage - 1) * pageSize + $index + 1 }}
           </template>
         </el-table-column>
 
-        <el-table-column label="操作" width="180" align="center" fixed="left">
+        <el-table-column label="操作" width="112" align="center" fixed="left">
           <template #default="{ row }">
-            <el-button type="primary" link :icon="View" @click="handleView(row)">查看</el-button>
-            <el-button type="primary" link :icon="Edit" @click="handleEdit(row)">编辑</el-button>
-            <el-dropdown>
-              <el-button type="primary" link :icon="MoreFilled" />
+            <el-button type="primary" link disabled :icon="CircleCheck" title="提交" />
+            <el-button
+              type="primary"
+              link
+              :disabled="row.status !== '草稿'"
+              :icon="Edit"
+              title="编辑"
+              @click="handleEdit(row)"
+            />
+            <el-dropdown trigger="hover" placement="bottom-start">
+              <el-button type="primary" link :icon="MoreFilled" title="更多" />
               <template #dropdown>
                 <el-dropdown-menu>
-                  <el-dropdown-item @click="handleSubmit(row)">提交</el-dropdown-item>
+                  <el-dropdown-item @click="handleDelete(row)">删除</el-dropdown-item>
                   <el-dropdown-item @click="handleVoid(row)">作废</el-dropdown-item>
                   <el-dropdown-item @click="handleCopy(row)">复制</el-dropdown-item>
-                  <el-dropdown-item divided @click="handleDelete(row)">删除</el-dropdown-item>
                 </el-dropdown-menu>
               </template>
             </el-dropdown>
           </template>
         </el-table-column>
 
-        <el-table-column label="报销单号" prop="reimNo" min-width="150" />
+        <el-table-column label="报销单号" prop="reimNo" min-width="150">
+          <template #default="{ row }">
+            <el-button type="primary" link class="table-link" @click="handleView(row)">
+              {{ row.reimNo }}
+            </el-button>
+          </template>
+        </el-table-column>
         <el-table-column label="状态" prop="status" width="100" align="center">
           <template #default="{ row }">
             <span class="status-tag" :class="getStatusClass(row.status)">
               {{ row.status }}
             </span>
+          </template>
+        </el-table-column>
+        <el-table-column label="单据类型" width="120" align="center">
+          <template #default>
+            日常报销单
           </template>
         </el-table-column>
         <el-table-column label="报销人" min-width="140">
@@ -112,7 +132,13 @@
         </el-table-column>
         <el-table-column label="归属公司" prop="companyName" min-width="180" />
         <el-table-column label="业务类型" prop="businessType" min-width="140" />
-        <el-table-column label="报销标题" prop="title" min-width="220" show-overflow-tooltip />
+        <el-table-column label="报销标题" prop="title" min-width="220" show-overflow-tooltip>
+          <template #default="{ row }">
+            <el-button type="primary" link class="table-link" @click="handleView(row)">
+              {{ row.title }}
+            </el-button>
+          </template>
+        </el-table-column>
         <el-table-column label="报销事由" prop="reason" min-width="220" show-overflow-tooltip />
         <el-table-column label="补助金额" width="120" align="right">
           <template #default="{ row }">
@@ -137,15 +163,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { Edit, MoreFilled, View } from '@element-plus/icons-vue'
+import { CircleCheck, Edit, Menu, MoreFilled } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { fetchLookups } from '../api/lookups'
 import {
   deleteReimbursement,
   fetchReimbursements,
-  submitReimbursement,
   voidReimbursement
 } from '../api/reimbursements'
 import type {
@@ -176,8 +201,7 @@ const currentPage = ref(1)
 const pageSize = ref(10)
 const totalRows = ref(0)
 const loading = ref(false)
-
-const flatBusinessTypes = computed(() => flattenBusinessTypes(businessTypes.value))
+const businessTypeFilter = ref<string[]>([])
 
 const loadLookups = async (): Promise<void> => {
   const data = await fetchLookups()
@@ -211,8 +235,14 @@ const resetFilters = (): void => {
   filters.deptId = ''
   filters.employeeId = ''
   filters.businessTypeId = ''
+  businessTypeFilter.value = []
   currentPage.value = 1
   void loadList()
+}
+
+const handleBusinessTypeChange = (value: string[] | string): void => {
+  const values = Array.isArray(value) ? value : [value]
+  filters.businessTypeId = values[values.length - 1] ?? ''
 }
 
 const handleAdd = (): void => {
@@ -229,13 +259,6 @@ const handleEdit = (row: ReimbursementItem): void => {
 
 const handleCopy = (row: ReimbursementItem): void => {
   router.push(`/reimbursement/add?copyFrom=${row.id}`)
-}
-
-const handleSubmit = async (row: ReimbursementItem): Promise<void> => {
-  await ElMessageBox.confirm('确认提交此报销单？', '提示', { type: 'warning' })
-  await submitReimbursement(row.id)
-  ElMessage.success('提交成功')
-  await loadList()
 }
 
 const handleVoid = async (row: ReimbursementItem): Promise<void> => {
@@ -267,18 +290,10 @@ const formatNameWithNo = (name?: string, no?: string): string => {
 const getStatusClass = (status: string): string => {
   const map: Record<string, string> = {
     草稿: 'status-draft',
-    审批中: 'status-pending',
-    审批通过: 'status-approved',
+    已完成: 'status-approved',
     已作废: 'status-void'
   }
   return map[status] || ''
-}
-
-const flattenBusinessTypes = (items: BusinessTypeTreeItem[]): OptionItem[] => {
-  return items.flatMap(item => [
-    { id: item.id, name: item.name },
-    ...flattenBusinessTypes(item.children ?? [])
-  ])
 }
 
 onMounted(async () => {
@@ -318,7 +333,7 @@ onMounted(async () => {
 }
 
 .filter-form {
-  flex: 1;
+  width: 100%;
   display: grid;
   grid-template-columns: repeat(4, minmax(220px, 1fr));
   gap: 12px 16px;
@@ -329,19 +344,41 @@ onMounted(async () => {
 }
 
 .filter-form :deep(.el-select),
+.filter-form :deep(.el-cascader),
 .filter-form :deep(.el-input) {
   width: 100%;
 }
 
-.actions {
+.form-actions {
+  justify-content: flex-end;
+}
+
+.form-actions :deep(.el-form-item__label) {
+  display: none;
+}
+
+.form-actions :deep(.el-form-item__content) {
   display: flex;
+  justify-content: flex-end;
   gap: 8px;
-  flex-shrink: 0;
+  width: 100%;
 }
 
 .reimbursement-table {
   flex: 1;
   min-height: 0;
+}
+
+.index-header-icon {
+  color: #5b8cff;
+  font-size: 16px;
+}
+
+.table-link {
+  padding: 0;
+  max-width: 100%;
+  white-space: normal;
+  text-align: left;
 }
 
 .status-tag {
